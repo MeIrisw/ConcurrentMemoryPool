@@ -17,6 +17,12 @@ private:
     FreeList _freeLists[FREE_LIST_NUM];    //哈希表
 };
 
+//TLS全局对象的指针，这样每个线程都能有这样一个独立的全局对象 static防止多个.cpp文件包含该文件时会发生链接错误
+static __thread ThreadCache* pTLSThreadCache = nullptr;
+{
+    
+}
+
 class SizeClass
 {
 public:

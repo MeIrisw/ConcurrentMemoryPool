@@ -3,6 +3,8 @@
 
 #include<iostream>
 #include<vector>
+#include<pthread.h>
+#include<unist.h>
 
 static const size_t FREE_LIST_NUM = 208; //哈希表中自由链表（哈希桶）的个数 每一个tc一个哈希表
 static const size_t MAX_BYTES = 256 * 1024;   //ThreadCache单次申请的最大字节数256KB
