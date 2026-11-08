@@ -19,9 +19,7 @@ private:
 
 //TLS全局对象的指针，这样每个线程都能有这样一个独立的全局对象 static防止多个.cpp文件包含该文件时会发生链接错误
 static __thread ThreadCache* pTLSThreadCache = nullptr;
-{
-    
-}
+
 
 class SizeClass
 {
@@ -102,7 +100,7 @@ public:
         }
         else if(size <= 256 * 1024)
         { //[64*1024+1,256*1024] 8*1024B
-            return _Index(size - 64 * 1024, 13) + grpup_array[3] + group_array[2] + group_array[1] + group_array[0];
+            return _Index(size - 64 * 1024, 13) + group_array[3] + group_array[2] + group_array[1] + group_array[0];
         }
         else
         { 
@@ -110,6 +108,6 @@ public:
         }
         return -1;
     }
-}
+};
 
 #endif

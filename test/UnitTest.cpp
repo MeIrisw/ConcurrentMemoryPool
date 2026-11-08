@@ -1,4 +1,5 @@
 #include "ConcurrentAlloc.h"
+#include <thread>  //使用C++的std::thread
 
 //线程1
 void Alloc1()
@@ -21,7 +22,11 @@ void Alloc2()
 
 void AllocTest()
 {
-    
+    std::thread t1(Alloc1);
+    std::thread t2(Alloc2);
+
+    t1.join();
+    t2.join();
 }
 
 int main(int argc,const char* argv[])
