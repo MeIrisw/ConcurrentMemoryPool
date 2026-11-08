@@ -108,6 +108,28 @@ public:
         }
         return -1;
     }
+
+    //向cc申请的上限块数（慢启动上限）
+    static size_t NumMoveSize(size_t size)
+    {
+        assert(size > 0);
+
+        int num = MAX_BYTES / size;  //这里除之后先简单控制一下
+
+        if(num > 512)
+        { //如果申请的大小较小，那么块数会很多，容易浪费。所以简单限制一下
+            num = 512;
+        }
+
+        //如果除了之后特别小，那就改成2
+        if(num < 2)
+        {
+            num = 2;
+        }
+        //[2,512]即为一次批量移动多少个对象（慢启动）的上限值
+
+        return num;
+    }
 };
 
 #endif

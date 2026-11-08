@@ -31,6 +31,33 @@ void ThreadCache::Deallocate(void* obj,size_t size)
 //ThreadCache中空间不够时，向CentralCache申请空间的接口
 void* ThreadCache::FetchFromCentralCache(size_t index, size_t alignSize)
 {
+    // 通过MaxSize和NumMoveSie来控制cc给tc提供多少块alignSize大小的空间
+    size_t batchNum = std::min(_freeLists[index].MaxSize(),SizeClass::NumMoveSize(alignSize));
+    
+    //没有到达上限，下次多给一块，慢开始调节算法的核心
+    if(batchNum == _freeLists[index].MaxSize())
+    { 
+        _freeLists[index].MaxSize()++;
+    }
+    
+    //输出型参数，返回之后的结果就是tc想要的空间
+    void* start = nullptr;
+    void* end = nullptr;
 
-    return nullptr;
+    //返回值为实际获取到的块数
+    size_t actulNum = CentralCache::GetInstance()->FetchRangeObj(start, end, batchNum, alignSize);
+
+    assert(actualNum >= 1);    //FetchRangeObj保证actualNum大于等于1
+
+    //如果actualNum等于1，直接将start返回给线程，线程是一次申请一块的
+    if(actualNum == 1)
+    { 
+        assert(start == end);
+        return start;
+    }else{
+        //如果actulNum大于1，就还要给tc对应位置插入[ObjNext(start), end]的空间
+		_freeLists[index].PushRange(ObjNext(start), end);
+
+        return start;  //给线程返回start所指空间
+    }
 }
