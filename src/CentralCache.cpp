@@ -1,4 +1,5 @@
 #include "CentralCache.h"
+#include "PageCache.h"
 
 CentralCache CentralCache::_sInst;    //CentralCache的饿汉对象
 
@@ -39,7 +40,44 @@ size_t CentralCache::FetchRangeObj(void*& start, void*& end, size_t batchNum, si
 
 // 获取一个管理空间不为空的span
 Span* CentralCache::GetOneSpan(SpanList& list, size_t size)
-{
+{       
+    // 先在cc中找一下有没有管理空间非空的span
+    Span* it = list.Begin();
+    while(it != list.End())
+    {
+        if(it->_freeList != nullptr)  //找到了
+            return it;
+        else
+            it = it->_next;
+    }
 
-    return nullptr;
+    // 没有再向pc中申请新的span
+    // 将size转换为匹配的页数
+    size_t k = SizeClass::NumMovePage(size);
+    // 调用NewSpan获取一个全新的span
+    Span* span = PageCache::GetInstance()->NewSpan(k);
+
+    /* 这里要强转一下，因为_pageID是PageID类型(size_t)的，不能直接赋值给指针*/
+    char* start = (char*)(span->_pageID << PAGE_SHIFT);  //_pageID乘上PAGE_SHIFT即这个空间首页的地址
+    char* end = (char*)(start + (span->_n << PAGE_SHIFT));  //span的末地址
+
+    //切分span的空间
+    span->_freeList = start;  //管理的空间放到span->_freeList中 因为上面的地址似乎不是真实的物理地址，而是我们自己从0开始排的（从第1页开始）
+
+    void* tail = start;   
+    start += size;
+
+    //链接各个块
+    while(start < end)
+    {
+        ObjNext(tail) = start;
+        start += size;
+        tail = ObjNext(tail);
+    }
+    ObjNext(tail) = nullptr;   // 记得要把最后一位置空
+
+    // 切好span以后，需要把span挂到cc对应下标的桶里面去	
+    list.PushFront(span);
+
+    return span;
 }

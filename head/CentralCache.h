@@ -30,7 +30,7 @@ private:
 private:
     SpanList _spanLists[FREE_LIST_NUM];    // cc中的哈希桶数量和tc中一致，每个块大小可以一一对应
     static CentralCache _sInst;      // 饿汉模式创建一个CentralCache
-}
+};
 
 
 

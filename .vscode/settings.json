@@ -1,0 +1,10 @@
+{
+    // clangd 用 compile_commands.json 的绝对路径定位；项目移动后需更新此处
+    "clangd.arguments": [
+        "--compile-commands-dir=/root/workstation/ConcurrentMemoryPool/build/test",
+        "--background-index",
+        "--completion-style=detailed",
+        "--header-insertion=never",
+        "--query-driver=/usr/bin/g++,/usr/bin/c++"
+    ]
+}

@@ -1,4 +1,5 @@
 #include "ThreadCache.h"
+#include "CentralCache.h"
 
 //线程向tc申请size大小的空间
 void* ThreadCache::Allocate(size_t size) 
@@ -45,7 +46,7 @@ void* ThreadCache::FetchFromCentralCache(size_t index, size_t alignSize)
     void* end = nullptr;
 
     //返回值为实际获取到的块数
-    size_t actulNum = CentralCache::GetInstance()->FetchRangeObj(start, end, batchNum, alignSize);
+    size_t actualNum = CentralCache::GetInstance()->FetchRangeObj(start, end, batchNum, alignSize);
 
     assert(actualNum >= 1);    //FetchRangeObj保证actualNum大于等于1
 
