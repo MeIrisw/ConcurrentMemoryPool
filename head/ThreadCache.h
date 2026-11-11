@@ -13,6 +13,8 @@ public:
     //ThreadCache中空间不够时，向CentralCache申请空间的接口
     void* FetchFromCentralCache(size_t index, size_t alignSize);
 
+    // tc向cc归还空间List桶中的空间，size表示该桶下块大小是多少
+	void ListTooLong(FreeList& list, size_t size);
 private:
     FreeList _freeLists[FREE_LIST_NUM];    //哈希表
 };

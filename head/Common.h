@@ -91,11 +91,36 @@ static void*& ObjNext(void* obj)   //obj空间的前4/8个字节
 class FreeList
 {
 public:
+    // 删除掉桶中n个块（头删），并把删除的空间作为输出型参数返回
+    void PopRange(void*& start, void*& end, size_t n)
+    {
+        assert(n <= _size);
+
+        start = end = _freeList;
+
+        for(size_t i = 0; i < n - 1; ++i)
+        {
+            end = ObjNext(end);
+        }
+
+        _freeList = ObjNext(end);
+        ObjNext(end) = nullptr;
+        _size -= n;
+    }
+    
+    // 获取当前桶中有多少空间
+    size_t Size()
+    {
+        return _size;
+    }
+    
     //向自由链表中头插入多块空间
-    void PushRange(void* start, void* end)
+    void PushRange(void* start, void* end, size_t size)
     {
         ObjNext(end) = _freeList;
         _freeList = start;
+
+        _size += size;
     }
 
     bool Empty()   //判断哈希桶是否为空
@@ -109,6 +134,8 @@ public:
 
         ObjNext(obj) = _freeList;
         _freeList = obj;
+
+        ++_size;
     }
 
     void* Pop()         //头删法提供空间
@@ -117,6 +144,8 @@ public:
 
         void* obj = _freeList;
         _freeList = ObjNext(obj);
+
+        --_size;
 
         return obj;
     }
@@ -130,6 +159,7 @@ public:
 private:
     void* _freeList = nullptr;    
     size_t _maxSize = 1;    //当前自由链表申请未达到上限时，能够申请的最大块空间是多少,到了上限这个值就作废 
+    size_t _size = 0;    //当前自由链表中有多少块空间
 };
 
 //以页为基本单位的结构体

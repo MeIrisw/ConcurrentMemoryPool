@@ -91,3 +91,9 @@ Span* CentralCache::GetOneSpan(SpanList& list, size_t size)
 
     return span;
 }
+
+// 将tc还回来的多块空间放到span中,size是对齐过的
+void CentralCache::ReleaseListToSpans(void* start, size_t size)
+{
+
+}

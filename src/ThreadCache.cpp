@@ -10,16 +10,16 @@ void* ThreadCache::Allocate(size_t size)
     size_t index = SizeClass::Index(size);          //size对应在哈希表中的哪个桶
 
     if(!_freeLists[index].Empty())
-    { //自由链表中不为空,直接从自由链表中获取空间
+    { // 自由链表中不为空,直接从自由链表中获取空间
         return _freeLists[index].Pop();
     }
     else
-    { //自由链表为空，得要让ThreadCache向CentralCache申请空间
+    { // 自由链表为空，得要让ThreadCache向CentralCache申请空间
         return FetchFromCentralCache(index, alignSize);
     }
 }
 
-//回收线程中大小为size的obj空间,这里的size保证是一个对齐的size，所以函数里不调RoundUp()对齐的函数
+// 回收线程中大小为size的obj空间,这里的size保证是一个对齐的size，所以函数里不调RoundUp()对齐的函数
 void ThreadCache::Deallocate(void* obj,size_t size)   
 {
     assert(obj);
@@ -27,6 +27,12 @@ void ThreadCache::Deallocate(void* obj,size_t size)
 
     size_t index = SizeClass::Index(size);  //找到size对应的自由链表
     _freeLists[index].Push(obj);          //回收空间
+
+    // 当前桶中的块数大于等于单批次申请块数的时候归还空间,因为一次插到桶中的块数是MaxSize-1，有一块直接给线程了
+    if(_freeLists[index].Size() >= _freeLists[index].MaxSize())
+    {
+        ListTooLong(_freeLists[index], size);
+    }
 }
 
 //ThreadCache中空间不够时，向CentralCache申请空间的接口
@@ -56,9 +62,22 @@ void* ThreadCache::FetchFromCentralCache(size_t index, size_t alignSize)
         assert(start == end);
         return start;
     }else{
-        //如果actulNum大于1，就还要给tc对应位置插入[ObjNext(start), end]的空间
-		_freeLists[index].PushRange(ObjNext(start), end);
+        //如果actulNum大于1，就还要给tc对应位置插入[ObjNext(start), end]的空间,第三个参数是插到FreeList的块数量，-1是有一块直接给线程了
+		_freeLists[index].PushRange(ObjNext(start), end, actualNum - 1);
 
         return start;  //给线程返回start所指空间
     }
+}
+
+// tc向cc归还空间List桶中的空间，size表示该桶下块大小是多少
+void ThreadCache::ListTooLong(FreeList& list, size_t size)
+{
+    void* start = nullptr;
+    void* end = nullptr;
+
+    // 获取MaxSize块空间
+    list.PopRange(start, end, list.MaxSize());
+
+    // 归还空间
+    CentralCache::GetInstance()->ReleaseListToSpans(start, size);
 }

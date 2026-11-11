@@ -58,6 +58,6 @@ void ConcurrentAllocTest2()
 
 int main(int argc,const char* argv[])
 {
-    AllocTest();
+    ConcurrentAllocTest1();
     return 0;
 }
