@@ -1,4 +1,5 @@
 #include "PageCache.h"
+#include "Common.h"
 
 PageCache PageCache::_sInst;   //单例对象
 
@@ -40,7 +41,20 @@ Span* PageCache::NewSpan(size_t k)
     }
     
     // <3> k号桶和后面的桶中都没有span
-    // 直接向系统申请128页的span
-    
+    // 直接向系统申请128页的空间
+    void* ptr = SystemAlloc(PAGE_NUM - 1);
 
+    // 开一个新的span用来维护这块空间
+    Span* bigSpan = new Span;
+
+    /* 只需要修改_pageID和_n即可,
+	系统调用接口申请空间的时候一定能保证申请的空间是对齐的*/
+    bigSpan->_pageID = ((PageID)ptr) >> PAGE_SHIFT;
+    bigSpan->_n = PAGE_NUM - 1;
+
+    // 将这个span放到对应哈希桶中
+    _spanLists[PAGE_NUM - 1].PushFront(bigSpan);
+
+    // 递归再次申请k页的span，这次递归一定会走<2>的逻辑
+    return NewSpan(k);
 }

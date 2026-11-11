@@ -6,6 +6,8 @@ find_package(Threads REQUIRED)
 add_executable(UnitTest
     UnitTest.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ThreadCache.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/CentralCache.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PageCache.cpp
 )
 
 target_compile_features(UnitTest PRIVATE cxx_std_11)

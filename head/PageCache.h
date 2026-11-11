@@ -17,6 +17,8 @@ public:
 
 private:
     SpanList _spanLists[PAGE_NUM];    // pc中的哈希表
+
+public:
     std::mutex _pageMtx;        // pc整体的锁
 
 private: // 单例，构造私有，拷构，赋构去掉

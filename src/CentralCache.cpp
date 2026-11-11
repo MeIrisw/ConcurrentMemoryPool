@@ -30,6 +30,7 @@ size_t CentralCache::FetchRangeObj(void*& start, void*& end, size_t batchNum, si
 
     //将这一部分空间从Span中删掉
     span->_freeList = ObjNext(end);
+    span->use_count += actualNum; // 给tc分了多少就给useCount加多少
     //不要和原先Span的_freeList中的块相连
     ObjNext(end) = nullptr;
 
@@ -51,18 +52,26 @@ Span* CentralCache::GetOneSpan(SpanList& list, size_t size)
             it = it->_next;
     }
 
+	// 解掉桶锁，让其他向该cc桶进行操作的线程能拿到锁
+    list._mtx.unlock();
+
     // 没有再向pc中申请新的span
     // 将size转换为匹配的页数
     size_t k = SizeClass::NumMovePage(size);
+    // 对pc的操作需要上锁
+    PageCache::GetInstance()->_pageMtx.lock();
     // 调用NewSpan获取一个全新的span
     Span* span = PageCache::GetInstance()->NewSpan(k);
+    PageCache::GetInstance()->_pageMtx.unlock();
 
     /* 这里要强转一下，因为_pageID是PageID类型(size_t)的，不能直接赋值给指针*/
     char* start = (char*)(span->_pageID << PAGE_SHIFT);  //_pageID乘上PAGE_SHIFT即这个空间首页的地址
     char* end = (char*)(start + (span->_n << PAGE_SHIFT));  //span的末地址
 
-    //切分span的空间
-    span->_freeList = start;  //管理的空间放到span->_freeList中 因为上面的地址似乎不是真实的物理地址，而是我们自己从0开始排的（从第1页开始）
+    // 切分span的空间
+    /* 管理的空间放到span->_freeList中 上面的地址是真实物理地址经过处理，
+    真实地址转化为无符号整数，除以PAGE_SHIFT得到页数，经过处理这个页数一定是对齐的整数页*/
+    span->_freeList = start;  
 
     void* tail = start;   
     start += size;
@@ -77,6 +86,7 @@ Span* CentralCache::GetOneSpan(SpanList& list, size_t size)
     ObjNext(tail) = nullptr;   // 记得要把最后一位置空
 
     // 切好span以后，需要把span挂到cc对应下标的桶里面去	
+    list._mtx.lock();  // span挂上之前加锁
     list.PushFront(span);
 
     return span;
